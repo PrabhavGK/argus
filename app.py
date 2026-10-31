@@ -759,9 +759,11 @@ async def api_kb_stats():
 
 
 # ---------------------------------------------------------------------
-# Static Files Mount
+# Static Files Mount (Safe path resolution for local and serverless)
 # ---------------------------------------------------------------------
-app.mount("/static", StaticFiles(directory="static"), name="static")
+static_dir = os.path.join(BASE_DIR, "static")
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 if __name__ == "__main__":

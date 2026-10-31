@@ -17,12 +17,14 @@ import sqlite3
 import time
 from typing import Any, Dict, List
 
-import chromadb
-from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+from config import DATA_DIR, DB_PATH, CHROMA_PERSIST_DIR, IS_VERCEL
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-DB_PATH = os.path.join(DATA_DIR, "argus_knowledge_base.db")
-CHROMA_PERSIST_DIR = os.path.join(DATA_DIR, "chroma_db")
+try:
+    import chromadb
+    from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
+    CHROMA_AVAILABLE = True
+except Exception:
+    CHROMA_AVAILABLE = False
 
 # ---------------------------------------------------------------------
 # Enterprise Seed Datasets
@@ -748,68 +750,69 @@ disk_filepath: "{filepath}"
 {content}
 """)
 
-    # 2. Sync into ChromaDB with true ONNX 384-d vectors
-    try:
-        onnx_fn = DefaultEmbeddingFunction()
-        client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
-
-        # Delete existing collection to wipe cleanly
+    # 2. Sync into ChromaDB with true ONNX 384-d vectors if ChromaDB is available
+    if CHROMA_AVAILABLE:
         try:
-            client.delete_collection("argus_knowledge_base")
-        except Exception:
-            pass
+            onnx_fn = DefaultEmbeddingFunction()
+            client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
 
-        collection = client.create_collection(
-            name="argus_knowledge_base",
-            embedding_function=onnx_fn,
-            metadata={"hnsw:space": "cosine"}
-        )
+            # Delete existing collection to wipe cleanly
+            try:
+                client.delete_collection("argus_knowledge_base")
+            except Exception:
+                pass
 
-        # Combine runbooks and incidents for vector ingestion
-        all_docs = []
-        all_ids = []
-        all_metas = []
+            collection = client.create_collection(
+                name="argus_knowledge_base",
+                embedding_function=onnx_fn,
+                metadata={"hnsw:space": "cosine"}
+            )
 
-        for rb in SEED_RUNBOOKS:
-            all_ids.append(rb["id"])
-            all_docs.append(f"{rb['title']}\n{rb['content']}")
-            all_metas.append({
-                "team": rb["team"],
-                "title": rb["title"],
-                "doc_id": rb["id"],
-                "created_at": now_str,
-                "type": "runbook"
-            })
+            # Combine runbooks and incidents for vector ingestion
+            all_docs = []
+            all_ids = []
+            all_metas = []
 
-        for inc in SEED_INCIDENTS:
-            all_ids.append(inc["id"])
-            all_docs.append(f"{inc['title']}\n{inc['content']}")
-            all_metas.append({
-                "team": inc["team"],
-                "title": inc["title"],
-                "doc_id": inc["id"],
-                "created_at": now_str,
-                "type": "incident"
-            })
+            for rb in SEED_RUNBOOKS:
+                all_ids.append(rb["id"])
+                all_docs.append(f"{rb['title']}\n{rb['content']}")
+                all_metas.append({
+                    "team": rb["team"],
+                    "title": rb["title"],
+                    "doc_id": rb["id"],
+                    "created_at": now_str,
+                    "type": "runbook"
+                })
 
-        # Upsert in batch
-        collection.upsert(
-            ids=all_ids,
-            documents=all_docs,
-            metadatas=all_metas
-        )
+            for inc in SEED_INCIDENTS:
+                all_ids.append(inc["id"])
+                all_docs.append(f"{inc['title']}\n{inc['content']}")
+                all_metas.append({
+                    "team": inc["team"],
+                    "title": inc["title"],
+                    "doc_id": inc["id"],
+                    "created_at": now_str,
+                    "type": "incident"
+                })
 
-        chroma_count = collection.count()
+            # Upsert in batch
+            collection.upsert(
+                ids=all_ids,
+                documents=all_docs,
+                metadatas=all_metas
+            )
 
-        # Update rag_engine's reference so it immediately reflects the fresh collection
-        try:
-            import rag_engine
-            rag_engine.chroma_collection = collection
-        except Exception:
-            pass
+            chroma_count = collection.count()
 
-    except Exception as e:
-        raise RuntimeError(f"ChromaDB seeding failed: {e}")
+            # Update rag_engine's reference so it immediately reflects the fresh collection
+            try:
+                import rag_engine
+                rag_engine.chroma_collection = collection
+            except Exception:
+                pass
+
+        except Exception as e:
+            print(f"[seed_data] ChromaDB seeding warning: {e}")
 
     return {
         "status": "success",
