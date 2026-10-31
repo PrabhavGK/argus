@@ -1,0 +1,16 @@
+[INC-2026-9042] Production Service Incident
+Reported By: <EMAIL_ADDRESS_1>
+Assignee: <EMAIL_ADDRESS_2>
+Contact Phone: +1-<PHONE_NUMBER_1>-019-2834
+Target VPC: us-east-1 (Subnet <INTERNAL_IP_1>/16)
+
+Description:
+At 14:22:01 UTC, payment microservice crashed while attempting to sync batch transaction logs with primary cluster.
+Internal connection failed at master host <INTERNAL_IP_2>:5432 and fallback replica <INTERNAL_IP_3>:5432.
+Worker pod pay-worker-7f98b attempted recovery using AWS IAM credential <AWS_ACCESS_KEY_1> 
+and secret token wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY.
+
+Stack Trace & Memory Buffer:
+java.sql.SQLException: Connection to <INTERNAL_IP_2>:5432 refused (connection timed out after 30000ms).
+    Session Token: Bearer <JWT_TOKEN_1>
+    Failed user lookup for email <EMAIL_ADDRESS_3> from workstation <INTERNAL_IP_4>.

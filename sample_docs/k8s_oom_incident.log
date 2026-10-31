@@ -1,0 +1,13 @@
+k8s.events: Pod 'payment-worker-7c98b' terminated with exit code 137 (OOMKilled).
+Last State: Terminated (Reason: OOMKilled, ExitCode: 137, StartedAt: 2026-10-30T14:10:00Z)
+Container: payment-worker
+Namespace: prod-payments
+Node: ip-10-244-3-18.ec2.internal (InternalIP: 10.244.3.18)
+Memory Working Set: 2048Mi (Hard Limit: 2048Mi)
+
+Annotations & Secret Envs:
+auth.jwt.secret: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+kubernetes.io/cluster-service: "10.244.0.1:6443"
+cluster.admin.contact: infra-lead@corporate.internal
+slack.webhook.url: https://hooks.slack.example.com/services/mock-placeholder-webhook
+AWS_SECRET_ACCESS_KEY=AKIAEXAMPLEMOCKSECRETKEYNOTREAL

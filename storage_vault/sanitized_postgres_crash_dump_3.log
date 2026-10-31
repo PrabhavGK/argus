@@ -1,0 +1,10 @@
+2026-10-30T14:15:02.192Z [ERROR] [HikariPool-1] - Connection is not available, request timed out after 30005ms.
+org.postgresql.util.PSQLException: Connection to <CLUSTER_SERVICE_ENDPOINT_1> refused (socket timeout).
+    at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:297)
+
+Environment Variables & Connection Metadata:
+DATABASE_URL=postgres://payment_admin:<DB_CONNECTION_STRING_1>@ssw0rd2026!<EMAIL_ADDRESS_1>:5432/ledger_production
+REPLICA_URL=postgres://ro_user:<DB_CONNECTION_STRING_2>@<CLUSTER_SERVICE_ENDPOINT_2>/ledger_production
+AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_1>
+ONCALL_ENGINEER=<EMAIL_ADDRESS_2>
+PRIMARY_SUBNET=<INTERNAL_IP_1>/24

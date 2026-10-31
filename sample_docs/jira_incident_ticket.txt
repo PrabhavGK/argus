@@ -1,0 +1,20 @@
+[INC-2026-9042] Critical Auth & DB Connection Failure in Production
+Reported By: alex.miller@corporate.internal
+Assignee: secops-oncall@corporate.internal
+Contact Phone: +1-555-019-2834
+Incident Channel: #incident-2026-9042
+Target VPC: us-east-1 (Subnet 10.14.0.0/16)
+
+Description:
+At 14:22:01 UTC, payment microservice crashed while attempting to sync batch transaction logs with primary cluster.
+Internal connection failed at master host 10.14.88.23:5432 and fallback replica 10.14.88.24:5432.
+Worker pod pay-worker-7f98b attempted recovery using AWS IAM credential AKIAIOSFODNN7EXAMPLE 
+and secret token wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY.
+
+Stack Trace & Memory Buffer:
+java.sql.SQLException: Connection to 10.14.88.23:5432 refused (connection timed out after 30000ms).
+    at com.internal.payment.db.ConnectionPool.acquire(ConnectionPool.java:142)
+    at com.internal.payment.auth.JWTValidator.validateToken(JWTValidator.java:89)
+    Session Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsZXgiLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+    Failed user lookup for email dev-admin@corporate.internal from workstation 192.168.1.105.
+    Secondary host 10.14.88.23:5432 also rejected retry loop.

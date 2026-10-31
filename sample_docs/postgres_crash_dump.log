@@ -1,0 +1,14 @@
+2026-10-30T14:15:02.192Z [ERROR] [HikariPool-1] - Connection is not available, request timed out after 30005ms.
+org.postgresql.util.PSQLException: Connection to 10.14.88.23:5432 refused (socket timeout).
+    at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:297)
+    at org.postgresql.core.v3.ConnectionFactoryImpl.openConnection(ConnectionFactoryImpl.java:49)
+    at org.postgresql.jdbc.PgConnection.<init>(PgConnection.java:217)
+    at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:364)
+
+Environment Variables & Connection Metadata:
+DATABASE_URL=postgres://payment_admin:P@ssw0rd2026!SecureKey@10.14.88.23:5432/ledger_production
+REPLICA_URL=postgres://ro_user:ReplicaReadOnlySecret99@10.14.88.24:5432/ledger_production
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+S3_BACKUP_BUCKET=s3://corp-payments-vault-east1/daily-dumps/
+ONCALL_ENGINEER=sarah.connor@corporate.internal
+PRIMARY_SUBNET=10.14.88.0/24
