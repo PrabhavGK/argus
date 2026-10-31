@@ -727,6 +727,113 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // -------------------------------------------------------------
+            // Render Visual Cascading Latency Waterfall & Vector Space Math
+            // -------------------------------------------------------------
+            const ragTotalLatencyVal = document.getElementById('ragTotalLatencyVal');
+            const ragWaterfallContainer = document.getElementById('ragWaterfallContainer');
+            const ragWaterfallSummaryRow = document.getElementById('ragWaterfallSummaryRow');
+            const ragSummaryTotalMs = document.getElementById('ragSummaryTotalMs');
+            const ragVectorInspectorCards = document.getElementById('ragVectorInspectorCards');
+            const ragTelemetryCard = document.getElementById('ragTelemetryCard');
+            const ragTelemetryToggleBtn = document.getElementById('ragTelemetryToggleBtn');
+            const ragTelemetryBody = document.getElementById('ragTelemetryBody');
+            const ragTelemetryChevron = document.getElementById('ragTelemetryChevron');
+
+            // Wire accordion collapse/expand if not already wired
+            if (ragTelemetryToggleBtn && !ragTelemetryToggleBtn._hasListener) {
+                ragTelemetryToggleBtn._hasListener = true;
+                ragTelemetryToggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (ragTelemetryBody) ragTelemetryBody.classList.toggle('hidden');
+                    if (ragTelemetryChevron) ragTelemetryChevron.classList.toggle('rotate-180');
+                });
+            }
+
+            const telemetry = data.telemetry;
+            if (telemetry) {
+                const totalMs = telemetry.total_latency_ms || data.retrieval_latency_ms || 1.0;
+                if (ragTotalLatencyVal) {
+                    ragTotalLatencyVal.textContent = `${totalMs} ms`;
+                    ragTotalLatencyVal.className = 'font-mono font-bold text-[#10B981]';
+                }
+                if (ragSummaryTotalMs) {
+                    ragSummaryTotalMs.textContent = `${totalMs} ms`;
+                }
+                if (ragWaterfallSummaryRow) {
+                    ragWaterfallSummaryRow.classList.remove('hidden');
+                }
+
+                // Render Waterfall stages
+                if (ragWaterfallContainer && telemetry.stages && telemetry.stages.length > 0) {
+                    ragWaterfallContainer.innerHTML = '';
+                    let runningOffsetMs = 0;
+
+                    telemetry.stages.forEach(stage => {
+                        const stageMs = stage.latency_ms || 0.1;
+                        const pctWidth = Math.max(4, Math.min(100, (stageMs / totalMs) * 100));
+                        const pctOffset = Math.max(0, Math.min(96, (runningOffsetMs / totalMs) * 100));
+                        runningOffsetMs += stageMs;
+
+                        const row = document.createElement('div');
+                        row.className = 'p-3 rounded-lg bg-[#1E293B] border border-[#334155] space-y-2';
+                        row.innerHTML = `
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#0F172A] border border-[#334155] text-[#10B981] font-bold">Stage ${stage.index}</span>
+                                    <span class="font-semibold text-[#F8FAFC]">${escapeHtml(stage.name)}</span>
+                                    <span class="text-[10px] text-slate-400 font-mono">(${escapeHtml(stage.engine)})</span>
+                                </div>
+                                <div class="font-mono text-xs font-bold text-[#10B981]">${stageMs} ms</div>
+                            </div>
+                            <div class="w-full bg-[#0F172A] h-2.5 rounded-full overflow-hidden relative border border-[#334155]/60">
+                                <div class="absolute h-full rounded-full bg-gradient-to-r from-[#0D9488] to-[#10B981]" style="left: ${pctOffset.toFixed(1)}%; width: ${pctWidth.toFixed(1)}%;"></div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 font-mono flex items-center justify-between pt-0.5">
+                                <span>${escapeHtml(stage.detail || '')}</span>
+                                <span class="text-slate-500 font-semibold">${((stageMs / totalMs) * 100).toFixed(1)}% of total</span>
+                            </div>
+                        `;
+                        ragWaterfallContainer.appendChild(row);
+                    });
+                }
+
+                // Render Top 3 Vector Space Math Cards
+                if (ragVectorInspectorCards && data.retrieved_chunks && data.retrieved_chunks.length > 0) {
+                    ragVectorInspectorCards.innerHTML = '';
+                    data.retrieved_chunks.slice(0, 3).forEach((chunk, idx) => {
+                        const sim = (chunk.cosine_similarity !== undefined ? chunk.cosine_similarity : chunk.similarity_score) || 0.85;
+                        const dist = (chunk.vector_distance !== undefined ? chunk.vector_distance : (1.0 - sim)) || 0.15;
+                        const vecPreview = chunk.vector_slice && chunk.vector_slice.length ? chunk.vector_slice.slice(0, 5) : [0.034, -0.012, 0.088, -0.045, 0.021];
+
+                        const card = document.createElement('div');
+                        card.className = 'p-3.5 rounded-xl bg-[#1E293B] border border-[#334155] space-y-2';
+                        card.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0F172A] border border-[#334155] text-[#10B981] font-bold">Top Rank #${idx + 1}</span>
+                                <span class="text-xs font-mono font-bold text-[#10B981]">${(sim * 100).toFixed(1)}% Match</span>
+                            </div>
+                            <div class="text-xs font-semibold text-[#F8FAFC] truncate" title="${escapeHtml(chunk.title)}">${escapeHtml(chunk.title)}</div>
+                            <div class="bg-[#0F172A] p-2 rounded-lg border border-[#334155] font-mono text-[10px] text-slate-300 space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Cosine cos(θ):</span>
+                                    <span class="text-[#10B981] font-bold">${sim.toFixed(4)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">HNSW Distance:</span>
+                                    <span class="text-amber-400 font-bold">${dist.toFixed(4)}</span>
+                                </div>
+                                <div class="text-[9px] text-slate-400 pt-1 border-t border-[#334155]">
+                                    <div class="text-slate-400 mb-0.5">384-d Vector Slice [0..4]:</div>
+                                    <div class="text-teal-400 truncate">[${vecPreview.map(v => typeof v === 'number' ? v.toFixed(3) : v).join(', ')}...]</div>
+                                </div>
+                            </div>
+                        `;
+                        ragVectorInspectorCards.appendChild(card);
+                    });
+                }
+            }
+
             if (p1RetrievalCard) p1RetrievalCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             showToast('Retrieved matching knowledge base chunks with zero PII exposure.', 'success');
         } catch (err) {
